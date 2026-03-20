@@ -55,6 +55,30 @@ Downloads `mlx-community/Qwen3.5-4B-MLX-bf16` (~8GB) and verifies:
 
 > **Note:** This model does not include native `<|function_calls|>` tokens. The preprocessing pipeline uses XML-style tool-call tags instead (`TOOL_CALL_FORMAT = "xml"` in `config.py`).
 
+### Explore dataset
+
+```bash
+cd slm-tool-calling-finetune
+python data/explore_dataset.py
+```
+
+Requires HuggingFace authentication (`huggingface_hub.login()`). Downloads and inspects
+`Salesforce/xlam-function-calling-60k` (60,000 examples).
+
+**Dataset schema (confirmed by exploration):**
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | int | Row index |
+| `query` | str | User query |
+| `tools` | str (JSON) | List of `{name, description, parameters}` |
+| `answers` | str (JSON) | List of `{name, arguments}` — `arguments` is a **dict**, not a string |
+
+**Key findings:**
+- `arguments` is a native dict — only one `json.loads()` needed (spec said two; that is incorrect for this dataset version)
+- 52.8% of examples contain parallel tool calls (>1 call per query)
+- 0 parse failures across first 1,000 rows
+
 ## Configuration
 
 All hyperparameters are in `config.py`. Key values:
