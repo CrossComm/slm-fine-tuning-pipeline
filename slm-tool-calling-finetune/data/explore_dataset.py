@@ -10,6 +10,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from datasets import load_dataset
 from config import DATASET_NAME
 
+SAMPLE_SIZE = 1000
+
 
 def main():
     """Download the xLAM dataset and print schema, sample rows, and statistics.
@@ -60,14 +62,14 @@ def main():
         else:
             print("  arguments is already a dict — single json.loads() is enough")
 
-    # Statistics on first 1000 rows
+    # Statistics on first SAMPLE_SIZE rows
     print("\n" + "=" * 60)
-    print("STATISTICS (first 1000 rows)")
+    print(f"STATISTICS (first {SAMPLE_SIZE} rows)")
     print("=" * 60)
     tools_counts, calls_counts, query_lens = [], [], []
     parse_fails = 0
 
-    for i in range(min(1000, len(dataset))):
+    for i in range(min(SAMPLE_SIZE, len(dataset))):
         r = dataset[i]
         query_lens.append(len(r["query"]))
         try:
@@ -78,12 +80,22 @@ def main():
         except (json.JSONDecodeError, ValueError, KeyError):
             parse_fails += 1
 
-    print(f"  Parse failures: {parse_fails}/1000")
-    print(f"  Query length — min:{min(query_lens)} max:{max(query_lens)} avg:{sum(query_lens)//len(query_lens)}")
-    print(f"  Tools/example — min:{min(tools_counts)} max:{max(tools_counts)} avg:{sum(tools_counts)/len(tools_counts):.1f}")
-    print(f"  Calls/example — min:{min(calls_counts)} max:{max(calls_counts)} avg:{sum(calls_counts)/len(calls_counts):.1f}")
-    parallel = sum(1 for n in calls_counts if n > 1)
-    print(f"  Parallel calls (>1): {parallel}/1000 ({parallel/10:.1f}%)")
+    sample_count = len(query_lens)
+    parsed_count = len(tools_counts)
+    print(f"  Parse failures: {parse_fails}/{sample_count}")
+    print(f"  Query length — min:{min(query_lens)} max:{max(query_lens)} avg:{sum(query_lens)//sample_count}")
+
+    if parsed_count == 0:
+        print("  Tools/example — no data (all rows failed to parse)")
+        print("  Calls/example — no data (all rows failed to parse)")
+        print("  Parallel calls (>1) — no data (all rows failed to parse)")
+    else:
+        if parsed_count < sample_count:
+            print(f"  Note: tools/calls stats cover {parsed_count} successfully parsed rows only")
+        parallel = sum(1 for n in calls_counts if n > 1)
+        print(f"  Tools/example — min:{min(tools_counts)} max:{max(tools_counts)} avg:{sum(tools_counts)/parsed_count:.1f}")
+        print(f"  Calls/example — min:{min(calls_counts)} max:{max(calls_counts)} avg:{sum(calls_counts)/len(calls_counts):.1f}")
+        print(f"  Parallel calls (>1): {parallel}/{len(calls_counts)} ({parallel/len(calls_counts)*100:.1f}%)")
 
     print("\n✅ Exploration complete.")
 
