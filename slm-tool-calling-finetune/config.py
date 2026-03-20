@@ -22,7 +22,7 @@ TOOL_CALL_FORMAT = "xml"  # "native" | "xml"
 LORA_RANK = 16
 LORA_ALPHA = 32
 LORA_DROPOUT = 0.0
-LORA_SCALE = 2.0  # alpha / rank
+LORA_SCALE = LORA_ALPHA / LORA_RANK  # alpha / rank
 NUM_LORA_LAYERS = 16
 
 # =============================================================================
@@ -34,6 +34,7 @@ STEPS_PER_EVAL = 200
 VAL_BATCHES = 25
 STEPS_PER_REPORT = 10
 GRAD_CHECKPOINT = True
+
 
 # =============================================================================
 # DATASET
@@ -57,6 +58,15 @@ ADAPTER_PATH = "./adapters"
 FUSED_MODEL_PATH = "./fused_model"
 HF_MODEL_PATH = "./hf_model"
 LORA_CONFIG_PATH = "./lora_config.yaml"
+
+# =============================================================================
+# TRAINING ITERATIONS
+# =============================================================================
+# Full run: 3 epochs over ~66K examples (54K positive + 12K negative).
+# Quick run: use 1000 to validate the pipeline before committing to a full run.
+_DATASET_SIZE = 54000 + NEGATIVE_EXAMPLE_COUNT
+TRAINING_ITERS_FULL = (_DATASET_SIZE // BATCH_SIZE) * 3  # 49,500
+TRAINING_ITERS_QUICK = 1000
 
 # =============================================================================
 # EVALUATION TARGETS

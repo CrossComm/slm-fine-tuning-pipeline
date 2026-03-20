@@ -1,6 +1,6 @@
 """Download Qwen 3.5-4B MLX and verify tokenizer/tool-calling tokens."""
 
-from mlx_lm import load
+from mlx_lm import load, generate
 from config import MODEL_NAME
 
 
@@ -52,9 +52,11 @@ def main():
 
     # Quick generation test
     print("\nTesting generation...")
-    from mlx_lm import generate
     response = generate(model, tokenizer, prompt="Hello", max_tokens=20, verbose=False)
-    print(f"   ✅ Generation works: '{response[:100]}'")
+    if not response or not response.strip():
+        print("   ⚠️  Generation returned empty output")
+    else:
+        print(f"   ✅ Generation works: '{response[:100]}'")
 
     print("\n✅ Model download and verification complete.")
 
