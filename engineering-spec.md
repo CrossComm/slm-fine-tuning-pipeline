@@ -27,7 +27,7 @@ Fine-tune **Qwen 3.5-4B** to excel at tool calling using the **Salesforce xLAM 6
 - **Size:** 60,000 examples, 21 API domains, 3,673 unique APIs
 - **Quality:** 3-stage verification (format → execution → semantic). Every example validated by running the function call.
 - **Schema:** 4 columns — `id`, `query` (string), `tools` (JSON string), `answers` (JSON string)
-- **Gotcha:** `answers[].arguments` is a JSON string INSIDE a JSON string. Must call `json.loads()` twice.
+- **Gotcha (corrected):** `answers[].arguments` is a **native dict**, not a double-encoded JSON string. Only one `json.loads()` call is needed (on the outer `answers` field). The original assumption of double-encoding was verified false by `data/explore_dataset.py`.
 
 ### 2.3 Framework: MLX / mlx-lm
 
