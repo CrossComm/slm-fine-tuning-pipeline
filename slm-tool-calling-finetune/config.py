@@ -10,6 +10,12 @@ MODEL_NAME = "mlx-community/Qwen3.5-4B-MLX-bf16"
 MODEL_NAME_4BIT = "mlx-community/Qwen3.5-4B-MLX-4bit"  # For quick dev iterations
 MAX_SEQ_LENGTH = 2048
 
+# Tool-calling token format.
+# NOTE: Qwen3.5-4B-MLX-bf16 does NOT have <|function_calls|> tokens in its
+# vocabulary (confirmed by download_model.py). Preprocessing must use XML-style
+# tags instead of native function-call tokens.
+TOOL_CALL_FORMAT = "xml"  # "native" | "xml"
+
 # =============================================================================
 # LORA (matches lora_config.yaml)
 # =============================================================================
