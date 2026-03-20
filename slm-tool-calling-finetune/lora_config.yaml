@@ -1,0 +1,5 @@
+# LoRA configuration for Qwen 3.5-4B tool-calling fine-tune
+rank: 16
+alpha: 32
+dropout: 0.0
+scale: 2.0
