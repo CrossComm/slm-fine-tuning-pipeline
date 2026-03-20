@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Models (large binary files)
+slm-tool-calling-finetune/adapters/*.safetensors
+slm-tool-calling-finetune/fused_model/
+slm-tool-calling-finetune/hf_model/
+
+# Data
+slm-tool-calling-finetune/data/*.jsonl
+
+# macOS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
+*.swp

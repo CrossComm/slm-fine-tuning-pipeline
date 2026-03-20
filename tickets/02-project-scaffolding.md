@@ -1,14 +1,14 @@
-# Ticket 02: Project Scaffolding & Config Module
+# Ticket 02: Project Scaffolding & Config
 
-**Dependencies:** Ticket 01 (environment setup)
+**Dependencies:** Ticket 01
 **Estimated time:** 10 minutes
-**Spec reference:** Sections 13 (File Structure), 4.3 (Versions), 6 (LoRA Config), 9 (Training Config)
+**Spec reference:** Sections 6, 11
 
 ---
 
 ## Objective
 
-Create the project directory structure and a central `config.py` module that holds ALL hyperparameters, paths, and model identifiers. Every other script imports from `config.py` — no magic numbers scattered across files.
+Create the project directory structure, LoRA config file, and a central config module. Every hyperparameter lives in config files — no magic numbers in scripts.
 
 ---
 
@@ -17,195 +17,142 @@ Create the project directory structure and a central `config.py` module that hol
 ```bash
 mkdir -p slm-tool-calling-finetune/data
 mkdir -p slm-tool-calling-finetune/tests
-mkdir -p slm-tool-calling-finetune/outputs
-```
-
-Verify:
-
-```bash
-find slm-tool-calling-finetune -type d
-```
-
-**Expected:**
-
-```
-slm-tool-calling-finetune
-slm-tool-calling-finetune/data
-slm-tool-calling-finetune/tests
-slm-tool-calling-finetune/outputs
+mkdir -p slm-tool-calling-finetune/adapters
+mkdir -p slm-tool-calling-finetune/fused_model
 ```
 
 ---
 
 ## Step 2: Create `config.py`
 
-Create `slm-tool-calling-finetune/config.py` with the following content. Every value comes directly from the engineering spec — do NOT change any values.
+Create `slm-tool-calling-finetune/config.py`:
 
 ```python
 """
-Central configuration for Qwen 3.5-4B tool-calling fine-tuning.
-All hyperparameters, paths, and model identifiers live here.
-Every other script imports from this module.
+Central configuration. All hyperparameters, paths, and model identifiers.
+Every other script imports from here.
 """
 
 # =============================================================================
 # MODEL
 # =============================================================================
-MODEL_NAME = "unsloth/Qwen3.5-4B"
+MODEL_NAME = "mlx-community/Qwen3.5-4B-MLX-bf16"
+MODEL_NAME_4BIT = "mlx-community/Qwen3.5-4B-MLX-4bit"  # For quick dev iterations
 MAX_SEQ_LENGTH = 2048
-DTYPE = None  # Auto-detect (bf16 on supported GPUs)
-LOAD_IN_4BIT = False  # IMPORTANT: Do NOT use 4-bit. Use bf16 LoRA.
 
 # =============================================================================
-# LORA
+# LORA (matches lora_config.yaml)
 # =============================================================================
-LORA_R = 16
+LORA_RANK = 16
 LORA_ALPHA = 32
-LORA_DROPOUT = 0  # Must be 0 — non-zero disables Unsloth kernel fusion
-LORA_TARGET_MODULES = [
-    "q_proj",
-    "k_proj",
-    "v_proj",
-    "o_proj",
-    "gate_proj",
-    "up_proj",
-    "down_proj",
-]
-LORA_BIAS = "none"
-GRADIENT_CHECKPOINTING = "unsloth"  # Unsloth's optimized version
-RANDOM_STATE = 42
-USE_RSLORA = False
-LOFTQ_CONFIG = None
+LORA_DROPOUT = 0.0
+LORA_SCALE = 2.0  # alpha / rank
+NUM_LORA_LAYERS = 16
+
+# =============================================================================
+# TRAINING
+# =============================================================================
+BATCH_SIZE = 4
+LEARNING_RATE = 1e-5
+STEPS_PER_EVAL = 200
+VAL_BATCHES = 25
+STEPS_PER_REPORT = 10
+GRAD_CHECKPOINT = True
 
 # =============================================================================
 # DATASET
 # =============================================================================
 DATASET_NAME = "Salesforce/xlam-function-calling-60k"
 NEGATIVE_DATASET_NAME = "yahma/alpaca-cleaned"
-NEGATIVE_EXAMPLE_COUNT = 12000  # ~25% of total when combined with 60K positives
-TEST_SPLIT_RATIO = 0.1
+NEGATIVE_EXAMPLE_COUNT = 12000
+VAL_SPLIT_RATIO = 0.1
 SPLIT_SEED = 42
 
-# =============================================================================
-# CHAT TEMPLATE
-# =============================================================================
 SYSTEM_PROMPT = (
     "You are a helpful assistant with access to the following functions. "
     "Use them if required."
 )
 
 # =============================================================================
-# TRAINING
+# PATHS (relative to project root)
 # =============================================================================
-OUTPUT_DIR = "./outputs"
-NUM_TRAIN_EPOCHS = 3
-PER_DEVICE_TRAIN_BATCH_SIZE = 4  # Reduce to 2 if OOM
-GRADIENT_ACCUMULATION_STEPS = 4  # Effective batch = 4 * 4 = 16
-LEARNING_RATE = 2e-4
-LR_SCHEDULER_TYPE = "cosine"
-WARMUP_RATIO = 0.1
-BF16 = True
-FP16 = False
-OPTIM = "adamw_8bit"
-MAX_GRAD_NORM = 1.0
-LOGGING_STEPS = 10
-EVAL_STRATEGY = "steps"
-EVAL_STEPS = 200
-SAVE_STRATEGY = "steps"
-SAVE_STEPS = 200
-SAVE_TOTAL_LIMIT = 3
-SEED = 42
-DATALOADER_NUM_WORKERS = 2
-REPORT_TO = "none"  # Change to "wandb" if W&B is configured
-PACKING = True
-DATASET_TEXT_FIELD = "text"
+DATA_DIR = "./data"
+ADAPTER_PATH = "./adapters"
+FUSED_MODEL_PATH = "./fused_model"
+HF_MODEL_PATH = "./hf_model"
+LORA_CONFIG_PATH = "./lora_config.yaml"
 
 # =============================================================================
-# EXPORT
-# =============================================================================
-LORA_OUTPUT_DIR = "./outputs/lora_adapters"
-MERGED_OUTPUT_DIR = "./outputs/merged_model"
-GGUF_OUTPUT_DIR = "./outputs/gguf_model"
-GGUF_QUANTIZATION = "q4_k_m"
-HUB_MODEL_NAME = "your-username/qwen3.5-4b-tool-calling"  # UPDATE THIS
-
-# =============================================================================
-# EVALUATION
+# EVALUATION TARGETS
 # =============================================================================
 TOOL_SELECTION_ACCURACY_TARGET = 0.85
 ARGUMENT_ACCURACY_TARGET = 0.80
 JSON_VALIDITY_TARGET = 0.98
 FALSE_POSITIVE_RATE_TARGET = 0.05
 FALSE_NEGATIVE_RATE_TARGET = 0.10
-AST_MATCH_SCORE_TARGET = 0.80
-
-# =============================================================================
-# PATHS (relative to project root)
-# =============================================================================
-PROCESSED_DATASET_DIR = "./data/processed"
-RAW_DATASET_DIR = "./data/raw"
 ```
 
 ---
 
-## Step 3: Create `__init__.py` files
+## Step 3: Create `lora_config.yaml`
 
-```bash
-touch slm-tool-calling-finetune/__init__.py
-touch slm-tool-calling-finetune/data/__init__.py
-touch slm-tool-calling-finetune/tests/__init__.py
+Create `slm-tool-calling-finetune/lora_config.yaml`:
+
+```yaml
+# LoRA configuration for Qwen 3.5-4B tool-calling fine-tune
+rank: 16
+alpha: 32
+dropout: 0.0
+scale: 2.0
 ```
 
 ---
 
-## Step 4: Create placeholder files
+## Step 4: Create `requirements.txt`
 
-Create empty placeholder files for all scripts that will be implemented in later tickets:
+Create `slm-tool-calling-finetune/requirements.txt`:
 
-```bash
-touch slm-tool-calling-finetune/data/preprocess.py
-touch slm-tool-calling-finetune/train.py
-touch slm-tool-calling-finetune/inference.py
-touch slm-tool-calling-finetune/evaluate.py
-touch slm-tool-calling-finetune/export.py
-touch slm-tool-calling-finetune/tests/test_tool_calling.py
+```
+mlx-lm>=0.22.0
+datasets>=3.0.0
+huggingface-hub>=0.20.0
+numpy>=1.26.0
 ```
 
 ---
 
-## Step 5: Verify config imports
+## Step 5: Create placeholder files
 
 ```bash
 cd slm-tool-calling-finetune
-python -c "from config import *; print(f'Model: {MODEL_NAME}'); print(f'Dataset: {DATASET_NAME}'); print(f'LoRA rank: {LORA_R}'); print('✅ Config imports OK')"
-cd ..
+touch data/__init__.py
+touch data/preprocess.py
+touch data/augment_negatives.py
+touch train.sh
+touch fuse.sh
+touch export_gguf.sh
+touch inference.py
+touch evaluate.py
+touch tests/__init__.py
+touch tests/test_tool_calling.py
 ```
 
-**Expected:**
+---
 
-```
-Model: unsloth/Qwen3.5-4B
-Dataset: Salesforce/xlam-function-calling-60k
-LoRA rank: 16
-✅ Config imports OK
+## Step 6: Verify config imports
+
+```bash
+cd slm-tool-calling-finetune
+python -c "from config import *; print(f'Model: {MODEL_NAME}'); print(f'LoRA rank: {LORA_RANK}'); print('✅ Config OK')"
 ```
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] Directory structure matches spec Section 13 exactly
-- [ ] `config.py` exists with ALL hyperparameters from the spec
-- [ ] All values in `config.py` match the engineering spec exactly
-- [ ] `from config import *` works without errors
-- [ ] All placeholder files exist (even if empty)
-- [ ] No hardcoded values exist outside `config.py`
-
----
-
-## Troubleshooting
-
-| Problem | Solution |
-|---------|----------|
-| Import error on config | Make sure you're running from the `slm-tool-calling-finetune/` directory or add it to `PYTHONPATH` |
-| Directory already exists | That's fine — `mkdir -p` is idempotent |
+- [ ] Directory structure matches spec Section 11
+- [ ] `config.py` has all hyperparameters
+- [ ] `lora_config.yaml` exists with rank, alpha, dropout, scale
+- [ ] `requirements.txt` lists MLX dependencies (NOT PyTorch, NOT CUDA packages)
+- [ ] All placeholder files created
+- [ ] Config imports work
