@@ -1,5 +1,8 @@
 # Python
 .venv/
+# Full pip freeze — environment-specific, not for version control.
+# Use slm-tool-calling-finetune/requirements.txt for pinned project dependencies.
+requirements.txt
 __pycache__/
 *.pyc
 *.pyo

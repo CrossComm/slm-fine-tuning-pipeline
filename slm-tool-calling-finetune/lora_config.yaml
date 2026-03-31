@@ -1,0 +1,8 @@
+# LoRA configuration for Qwen 3.5-4B tool-calling fine-tune
+#
+# Note: num_layers (how many transformer layers get LoRA applied) is NOT
+# supported as a YAML key by mlx-lm. Pass it as --num-layers 16 in train.sh.
+rank: 16
+alpha: 32
+dropout: 0.0
+scale: 2.0
